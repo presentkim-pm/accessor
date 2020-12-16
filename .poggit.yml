@@ -1,0 +1,11 @@
+--- # Poggit-CI Manifest. Open the CI at https://poggit.pmmp.io/ci/PresentKim/accessor
+branches:
+  - main
+projects:
+  accessor:
+    model: virion
+    type: library
+    icon: assets/icon.png
+    lint:
+      phpstan: false
+...
