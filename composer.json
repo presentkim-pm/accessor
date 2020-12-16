@@ -1,0 +1,13 @@
+{
+  "name": "presentkim/accessor",
+  "description": "Library that provides a way to access non-public elements",
+  "readme": "README.md",
+  "autoload": {
+    "files": [ "src/kim/present/lib/accessor/Accessor.php" ]
+  },
+  "require": {
+    "php": "^7.3"
+  },
+  "license": "MIT",
+  "version": "1.0.0"
+}
