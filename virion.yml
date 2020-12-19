@@ -1,7 +1,7 @@
 ---
 name: accessor
 antigen: kim\present\lib\accessor
-version: 1.1.0
+version: 1.2.0
 api: 3.0.0
 authors: [ PresentKim ]
 description: Library that provides a way to access non-public elements

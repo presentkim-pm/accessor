@@ -29,8 +29,8 @@ namespace kim\present\lib\accessor;
  *
  * @param object|string $value
  */
-function access($value) : Accessor{
-    return Accessor::from($value);
+function access($value, int $flags = Accessor::FLAG_WRAP_ARRAY) : Accessor{
+    return Accessor::from($value, $flags);
 }
 
 /**
@@ -43,6 +43,12 @@ function access($value) : Accessor{
  * ===================================
  */
 class Accessor{
+    public const FLAG_WRAP_NONE = 0x00;
+    public const FLAG_WRAP_ARRAY = 0x01;
+    public const FLAG_WRAP_OBJECT = 0x02;
+
+    public const FLAG_WRAP_ALL = self::FLAG_WRAP_ARRAY | self::FLAG_WRAP_OBJECT;
+
     public static function init() : void{ }
 
     /**
@@ -50,8 +56,8 @@ class Accessor{
      *
      * @param object|string $value
      */
-    public static function from($value) : Accessor{
-        return new self($value);
+    public static function from($value, int $flags = self::FLAG_WRAP_ARRAY) : Accessor{
+        return new self($value, $flags);
     }
 
     /** @var string */
@@ -59,6 +65,9 @@ class Accessor{
 
     /** @var object|null */
     protected $object = null;
+
+    /** @var int */
+    protected $flags;
 
     /** @var \ReflectionClass */
     protected $reflection;
@@ -70,7 +79,7 @@ class Accessor{
     protected $methods = [];
 
     /** @param object|string $value */
-    protected function __construct($value){
+    protected function __construct($value, int $flags = self::FLAG_WRAP_ARRAY){
         if(is_object($value)){
             $this->class = get_class($value);
             $this->object = $value;
@@ -88,6 +97,7 @@ class Accessor{
         }catch(\ReflectionException $exception){
             throw new \RuntimeException("Cannot be access to {$this->class} class");
         }
+        $this->flags = $flags;
     }
 
     /** Returns original class name */
@@ -156,12 +166,19 @@ class Accessor{
 
     public function __get(string $name){
         $value = $this->__getDirect($name);
-        return is_array($value) ? new ArrayProp($this, $name) : $value;
+        if(is_array($value) && ($this->flags & self::FLAG_WRAP_ARRAY) !== 0){
+            $value = new ArrayProp($this, $name);
+        }elseif(is_object($value) && ($this->flags & self::FLAG_WRAP_OBJECT) !== 0){
+            $value = new Accessor($this, $this->flags);
+        }
+        return $value;
     }
 
     public function __set(string $name, $value) : void{
-        if($value instanceof ArrayProp){
+        if($value instanceof ArrayProp && ($this->flags & self::FLAG_WRAP_ARRAY) !== 0){
             $value = $value->getAll();
+        }elseif($value instanceof Accessor && ($this->flags & self::FLAG_WRAP_OBJECT) !== 0){
+            $value = $value->__getObject();
         }
 
         $this->__setDirect($name, $value);
