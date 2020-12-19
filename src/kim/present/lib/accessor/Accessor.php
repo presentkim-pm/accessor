@@ -45,6 +45,9 @@ function access($value, int $flags = Accessor::FLAG_WRAP_ARRAY) : Accessor{
 class Accessor{
     public const FLAG_WRAP_NONE = 0x00;
     public const FLAG_WRAP_ARRAY = 0x01;
+    public const FLAG_WRAP_OBJECT = 0x02;
+
+    public const FLAG_WRAP_ALL = self::FLAG_WRAP_ARRAY | self::FLAG_WRAP_OBJECT;
 
     public static function init() : void{ }
 
@@ -165,6 +168,8 @@ class Accessor{
         $value = $this->__getDirect($name);
         if(is_array($value) && ($this->flags & self::FLAG_WRAP_ARRAY) !== 0){
             $value = new ArrayProp($this, $name);
+        }elseif(is_object($value) && ($this->flags & self::FLAG_WRAP_OBJECT) !== 0){
+            $value = new Accessor($this, $this->flags);
         }
         return $value;
     }
@@ -172,6 +177,8 @@ class Accessor{
     public function __set(string $name, $value) : void{
         if($value instanceof ArrayProp && ($this->flags & self::FLAG_WRAP_ARRAY) !== 0){
             $value = $value->getAll();
+        }elseif($value instanceof Accessor && ($this->flags & self::FLAG_WRAP_OBJECT) !== 0){
+            $value = $value->__getObject();
         }
 
         $this->__setDirect($name, $value);
