@@ -42,7 +42,7 @@ function access($value, int $flags = Accessor::FLAG_WRAP_ARRAY) : Accessor{
  *
  * ===================================
  */
-class Accessor{
+class Accessor implements IAccessor{
     public const FLAG_WRAP_NONE = 0x00;
     public const FLAG_WRAP_ARRAY = 0x01;
     public const FLAG_WRAP_OBJECT = 0x02;
@@ -61,10 +61,10 @@ class Accessor{
     }
 
     /** @var string */
-    protected $class;
+    protected $className;
 
     /** @var object|null */
-    protected $object = null;
+    protected $origin = null;
 
     /** @var int */
     protected $flags;
@@ -81,11 +81,11 @@ class Accessor{
     /** @param object|string $value */
     protected function __construct($value, int $flags = self::FLAG_WRAP_ARRAY){
         if(is_object($value)){
-            $this->class = get_class($value);
-            $this->object = $value;
+            $this->className = get_class($value);
+            $this->origin = $value;
         }elseif(is_string($value)){
             if(class_exists($value)){
-                $this->class = $value;
+                $this->className = $value;
             }else{
                 throw new \RuntimeException("An unknown class name was given : $value");
             }
@@ -93,21 +93,21 @@ class Accessor{
             throw new \RuntimeException("Argument 1 passed must be of the object or string, " . gettype($value) . " given");
         }
         try{
-            $this->reflection = new \ReflectionClass($this->class);
+            $this->reflection = new \ReflectionClass($this->className);
         }catch(\ReflectionException $exception){
-            throw new \RuntimeException("Cannot be access to {$this->class} class");
+            throw new \RuntimeException("Cannot be access to {$this->className} class");
         }
         $this->flags = $flags;
     }
 
     /** Returns original class name */
-    public function __getClass() : string{
-        return $this->class;
+    public function getClassName() : string{
+        return $this->className;
     }
 
     /** Returns original object or null */
-    public function __getObject() : ?object{
-        return $this->object;
+    public function getOrigin() : ?object{
+        return $this->origin;
     }
 
     /** Returns original object or null */
@@ -121,10 +121,10 @@ class Accessor{
                 $this->properties[$name] = $this->reflection->getProperty($name);
                 $this->properties[$name]->setAccessible(true);
             }catch(\ReflectionException $exception){
-                throw new \RuntimeException("Undefined property: {$this->class}::\${$name}");
+                throw new \RuntimeException("Undefined property: {$this->className}::\${$name}");
             }
         }
-        if(!$this->properties[$name]->isStatic() && $this->object === null)
+        if(!$this->properties[$name]->isStatic() && $this->origin === null)
             throw new \RuntimeException("Accessor for which no object is given cannot access member property.");
 
         return $this->properties[$name];
@@ -136,10 +136,10 @@ class Accessor{
                 $this->methods[$name] = $this->reflection->getMethod($name);
                 $this->methods[$name]->setAccessible(true);
             }catch(\ReflectionException $exception){
-                throw new \RuntimeException("Undefined method: {$this->class}::{$name}()");
+                throw new \RuntimeException("Undefined method: {$this->className}::{$name}()");
             }
         }
-        if(!$this->methods[$name]->isStatic() && $this->object === null)
+        if(!$this->methods[$name]->isStatic() && $this->origin === null)
             throw new \RuntimeException("Accessor for which no object is given cannot access member method.");
 
         return $this->methods[$name];
@@ -147,12 +147,12 @@ class Accessor{
 
     public function __getDirect(string $name){
         $property = $this->getProperty($name);
-        return $property->getValue($property->isStatic() ? null : $this->object);
+        return $property->getValue($property->isStatic() ? null : $this->origin);
     }
 
     public function __setDirect(string $name, $value) : void{
         $property = $this->getProperty($name);
-        $property->setValue($property->isStatic() ? null : $this->object, $value);
+        $property->setValue($property->isStatic() ? null : $this->origin, $value);
     }
 
     public function __isset(string $name) : bool{
@@ -175,17 +175,11 @@ class Accessor{
     }
 
     public function __set(string $name, $value) : void{
-        if($value instanceof ArrayProp && ($this->flags & self::FLAG_WRAP_ARRAY) !== 0){
-            $value = $value->getAll();
-        }elseif($value instanceof Accessor && ($this->flags & self::FLAG_WRAP_OBJECT) !== 0){
-            $value = $value->__getObject();
-        }
-
-        $this->__setDirect($name, $value);
+        $this->__setDirect($name, $value instanceof IAccessor ? $value->getOrigin() : $value);
     }
 
     public function __call(string $name, $args){
         $method = $this->getMethod($name);
-        return $method->invokeArgs($method->isStatic() ? null : $this->object, $args);
+        return $method->invokeArgs($method->isStatic() ? null : $this->origin, $args);
     }
 }

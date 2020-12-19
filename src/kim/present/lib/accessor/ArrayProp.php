@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace kim\present\lib\accessor;
 
-class ArrayProp implements \ArrayAccess, \Countable, \IteratorAggregate{
+class ArrayProp implements IAccessor, \ArrayAccess, \Countable, \IteratorAggregate{
     /** @var Accessor */
     protected $accessor;
 
@@ -36,16 +36,16 @@ class ArrayProp implements \ArrayAccess, \Countable, \IteratorAggregate{
         $this->name = $name;
     }
 
-    public function getAll() : array{
+    public function getOrigin() : array{
         return (array) $this->accessor->__getDirect($this->name);
     }
 
-    public function setAll(array $values) : void{
+    public function setOrigin(array $values) : void{
         $this->accessor->__setDirect($this->name, $values);
     }
 
     public function offsetExists($offset) : bool{
-        return isset($this->getAll()[$offset]);
+        return isset($this->getOrigin()[$offset]);
     }
 
     /**
@@ -54,30 +54,30 @@ class ArrayProp implements \ArrayAccess, \Countable, \IteratorAggregate{
      * @return mixed
      */
     public function offsetGet($offset){
-        return $this->getAll()[$offset];
+        return $this->getOrigin()[$offset];
     }
 
     public function offsetSet($offset, $value) : void{
-        $values = $this->getAll();
+        $values = $this->getOrigin();
         if($offset === null){
             $values[] = $value;
         }else{
             $values[$offset] = $value;
         }
-        $this->setAll($values);
+        $this->setOrigin($values);
     }
 
     public function offsetUnset($offset) : void{
-        $values = $this->getAll();
+        $values = $this->getOrigin();
         unset($values[$offset]);
-        $this->setAll($values);
+        $this->setOrigin($values);
     }
 
     public function count() : int{
-        return count($this->getAll());
+        return count($this->getOrigin());
     }
 
     public function getIterator() : \ArrayIterator{
-        return new \ArrayIterator($this->getAll());
+        return new \ArrayIterator($this->getOrigin());
     }
 }
