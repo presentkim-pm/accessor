@@ -126,7 +126,7 @@ class Accessor{
                 $this->methods[$name] = $this->reflection->getMethod($name);
                 $this->methods[$name]->setAccessible(true);
             }catch(\ReflectionException $exception){
-                throw new \RuntimeException("Undefined method: {$this->class}::\${$name}()");
+                throw new \RuntimeException("Undefined method: {$this->class}::{$name}()");
             }
         }
         if(!$this->methods[$name]->isStatic() && $this->object === null)
