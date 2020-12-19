@@ -60,8 +60,8 @@ class Accessor{
     /** @var object|null */
     protected $object = null;
 
-    /** @var \ReflectionClass| null */
-    protected $reflection = null;
+    /** @var \ReflectionClass */
+    protected $reflection;
 
     /** @var \ReflectionProperty[] */
     protected $properties = [];
@@ -98,6 +98,11 @@ class Accessor{
     /** Returns original object or null */
     public function __getObject() : ?object{
         return $this->object;
+    }
+
+    /** Returns original object or null */
+    public function __getReflection() : \ReflectionClass{
+        return $this->reflection;
     }
 
     protected function getProperty(string $name) : \ReflectionProperty{
