@@ -135,6 +135,16 @@ class Accessor{
         return $this->methods[$name];
     }
 
+    public function __getDirect(string $name){
+        $property = $this->getProperty($name);
+        return $property->getValue($property->isStatic() ? null : $this->object);
+    }
+
+    public function __setDirect(string $name, $value) : void{
+        $property = $this->getProperty($name);
+        $property->setValue($property->isStatic() ? null : $this->object, $value);
+    }
+
     public function __isset(string $name) : bool{
         try{
             $this->getProperty($name);
@@ -145,13 +155,16 @@ class Accessor{
     }
 
     public function __get(string $name){
-        $property = $this->getProperty($name);
-        return $property->getValue($property->isStatic() ? null : $this->object);
+        $value = $this->__getDirect($name);
+        return is_array($value) ? new ArrayProp($this, $name) : $value;
     }
 
     public function __set(string $name, $value) : void{
-        $property = $this->getProperty($name);
-        $property->setValue($property->isStatic() ? null : $this->object, $value);
+        if($value instanceof ArrayProp){
+            $value = $value->getAll();
+        }
+
+        $this->__setDirect($name, $value);
     }
 
     public function __call(string $name, $args){
