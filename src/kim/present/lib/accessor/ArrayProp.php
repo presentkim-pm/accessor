@@ -24,16 +24,15 @@ declare(strict_types=1);
 
 namespace kim\present\lib\accessor;
 
-class ArrayProp implements \ArrayAccess, \Countable, \IteratorAggregate{
-    /** @var Accessor */
-    protected $accessor;
+use ArrayAccess;
+use Countable;
+use IteratorAggregate;
 
-    /** @var string */
-    protected $name;
-
-    public function __construct(Accessor $accessor, string $name){
-        $this->accessor = $accessor;
-        $this->name = $name;
+class ArrayProp implements ArrayAccess, Countable, IteratorAggregate{
+    public function __construct(
+        protected Accessor $accessor,
+        protected string $name
+    ){
     }
 
     public function getAll() : array{
@@ -48,12 +47,8 @@ class ArrayProp implements \ArrayAccess, \Countable, \IteratorAggregate{
         return isset($this->getAll()[$offset]);
     }
 
-    /**
-     * @param int|string $offset
-     *
-     * @return mixed
-     */
-    public function offsetGet($offset){
+    /** @param  $offset */
+    public function offsetGet($offset) : mixed{
         return $this->getAll()[$offset];
     }
 
