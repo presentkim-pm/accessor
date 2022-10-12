@@ -1,6 +1,6 @@
 <?php
 
-/*
+/**
  *
  *  ____                           _   _  ___
  * |  _ \ _ __ ___  ___  ___ _ __ | |_| |/ (_)_ __ ___
@@ -18,11 +18,24 @@
  *   (\ /)
  *  ( . .) ♥
  *  c(")(")
+ *
+ * @noinspection PhpUnused
+ * @noinspection PhpUnusedLocalVariableInspection
+ * @noinspection PropertyInitializationFlawsInspection
+ * @noinspection PhpMissingParamTypeInspection
+ * @noinspection PhpMissingFieldTypeInspection
+ * @noinspection MagicMethodsValidityInspection
  */
 
 declare(strict_types=1);
 
 namespace kim\present\lib\accessor;
+
+use ReflectionClass;
+use ReflectionException;
+use ReflectionMethod;
+use ReflectionProperty;
+use RuntimeException;
 
 /**
  * Creates an Accessor instance that wraps the given object or class name
@@ -69,13 +82,13 @@ class Accessor{
     /** @var int */
     protected $flags;
 
-    /** @var \ReflectionClass */
+    /** @var ReflectionClass */
     protected $reflection;
 
-    /** @var \ReflectionProperty[] */
+    /** @var ReflectionProperty[] */
     protected $properties = [];
 
-    /** @var \ReflectionMethod[] */
+    /** @var ReflectionMethod[] */
     protected $methods = [];
 
     /** @param object|string $value */
@@ -87,15 +100,15 @@ class Accessor{
             if(class_exists($value)){
                 $this->class = $value;
             }else{
-                throw new \RuntimeException("An unknown class name was given : $value");
+                throw new RuntimeException("An unknown class name was given : $value");
             }
         }else{
-            throw new \RuntimeException("Argument 1 passed must be of the object or string, " . gettype($value) . " given");
+            throw new RuntimeException("Argument 1 passed must be of the object or string, " . gettype($value) . " given");
         }
         try{
-            $this->reflection = new \ReflectionClass($this->class);
-        }catch(\ReflectionException $exception){
-            throw new \RuntimeException("Cannot be access to {$this->class} class");
+            $this->reflection = new ReflectionClass($this->class);
+        }catch(ReflectionException $exception){
+            throw new RuntimeException("Cannot be access to $this->class class");
         }
         $this->flags = $flags;
     }
@@ -111,36 +124,38 @@ class Accessor{
     }
 
     /** Returns original object or null */
-    public function __getReflection() : \ReflectionClass{
+    public function __getReflection() : ReflectionClass{
         return $this->reflection;
     }
 
-    protected function getProperty(string $name) : \ReflectionProperty{
+    protected function getProperty(string $name) : ReflectionProperty{
         if(!isset($this->properties[$name])){
             try{
                 $this->properties[$name] = $this->reflection->getProperty($name);
                 $this->properties[$name]->setAccessible(true);
-            }catch(\ReflectionException $exception){
-                throw new \RuntimeException("Undefined property: {$this->class}::\${$name}");
+            }catch(ReflectionException $exception){
+                throw new RuntimeException("Undefined property: $this->class::\$$name");
             }
         }
-        if(!$this->properties[$name]->isStatic() && $this->object === null)
-            throw new \RuntimeException("Accessor for which no object is given cannot access member property.");
+        if(!$this->properties[$name]->isStatic() && $this->object === null){
+            throw new RuntimeException("Accessor for which no object is given cannot access member property.");
+        }
 
         return $this->properties[$name];
     }
 
-    protected function getMethod(string $name) : \ReflectionMethod{
+    protected function getMethod(string $name) : ReflectionMethod{
         if(!isset($this->methods[$name])){
             try{
                 $this->methods[$name] = $this->reflection->getMethod($name);
                 $this->methods[$name]->setAccessible(true);
-            }catch(\ReflectionException $exception){
-                throw new \RuntimeException("Undefined method: {$this->class}::{$name}()");
+            }catch(ReflectionException $exception){
+                throw new RuntimeException("Undefined method: $this->class::$name()");
             }
         }
-        if(!$this->methods[$name]->isStatic() && $this->object === null)
-            throw new \RuntimeException("Accessor for which no object is given cannot access member method.");
+        if(!$this->methods[$name]->isStatic() && $this->object === null){
+            throw new RuntimeException("Accessor for which no object is given cannot access member method.");
+        }
 
         return $this->methods[$name];
     }
@@ -159,7 +174,7 @@ class Accessor{
         try{
             $this->getProperty($name);
             return true;
-        }catch(\RuntimeException $exception){
+        }catch(RuntimeException $exception){
             return false;
         }
     }
@@ -177,7 +192,7 @@ class Accessor{
     public function __set(string $name, $value) : void{
         if($value instanceof ArrayProp && ($this->flags & self::FLAG_WRAP_ARRAY) !== 0){
             $value = $value->getAll();
-        }elseif($value instanceof Accessor && ($this->flags & self::FLAG_WRAP_OBJECT) !== 0){
+        }elseif($value instanceof self && ($this->flags & self::FLAG_WRAP_OBJECT) !== 0){
             $value = $value->__getObject();
         }
 
@@ -186,6 +201,10 @@ class Accessor{
 
     public function __call(string $name, $args){
         $method = $this->getMethod($name);
-        return $method->invokeArgs($method->isStatic() ? null : $this->object, $args);
+        try{
+            return $method->invokeArgs($method->isStatic() ? null : $this->object, $args);
+        }catch(ReflectionException $exception){
+            return null;
+        }
     }
 }

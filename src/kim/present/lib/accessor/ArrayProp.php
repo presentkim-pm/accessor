@@ -1,6 +1,6 @@
 <?php
 
-/*
+/**
  *
  *  ____                           _   _  ___
  * |  _ \ _ __ ___  ___  ___ _ __ | |_| |/ (_)_ __ ___
@@ -18,20 +18,28 @@
  *   (\ /)
  *  ( . .) ♥
  *  c(")(")
+ *
+ * @noinspection PhpMissingFieldTypeInspection
+ * @noinspection PhpMissingParamTypeInspection
  */
 
 declare(strict_types=1);
 
 namespace kim\present\lib\accessor;
 
-class ArrayProp implements \ArrayAccess, \Countable, \IteratorAggregate{
+use ArrayAccess;
+use ArrayIterator;
+use Countable;
+use IteratorAggregate;
+
+class ArrayProp implements ArrayAccess, Countable, IteratorAggregate{
     /** @var Accessor */
     protected $accessor;
 
     /** @var string */
     protected $name;
 
-    public function __construct(Accessor $accessor, string $name){
+    public function __construct($accessor, $name){
         $this->accessor = $accessor;
         $this->name = $name;
     }
@@ -44,19 +52,23 @@ class ArrayProp implements \ArrayAccess, \Countable, \IteratorAggregate{
         $this->accessor->__setDirect($this->name, $values);
     }
 
+    /** @param int|string $offset */
     public function offsetExists($offset) : bool{
         return isset($this->getAll()[$offset]);
     }
 
     /**
      * @param int|string $offset
-     *
      * @return mixed
      */
     public function offsetGet($offset){
         return $this->getAll()[$offset];
     }
 
+    /**
+     * @param int|string $offset
+     * @param mixed      $value
+     */
     public function offsetSet($offset, $value) : void{
         $values = $this->getAll();
         if($offset === null){
@@ -77,7 +89,7 @@ class ArrayProp implements \ArrayAccess, \Countable, \IteratorAggregate{
         return count($this->getAll());
     }
 
-    public function getIterator() : \ArrayIterator{
-        return new \ArrayIterator($this->getAll());
+    public function getIterator() : ArrayIterator{
+        return new ArrayIterator($this->getAll());
     }
 }
